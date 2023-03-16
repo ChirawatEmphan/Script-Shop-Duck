@@ -1,0 +1,168 @@
+function exploreclass(oid='1',custid='333',pname='ลาบเป็ด 1 จาน',quantity=1) {
+  var sheeturl = 'https://docs.google.com/spreadsheets/d/14o2tyW7LLMwE3oVqVDqpI8sbtxSNNIOueHO5aXHcsF0/edit?usp=sharing'
+  var sheetname = 'สินค้า'
+  var psheet = gspandas.gsdataframe(sheeturl,sheetname)
+  var currentval = parseInt(psheet.getvalue('ชื่อสินค้า',pname,'ปริมาณ'),10)
+  psheet.updatevalue('ชื่อสินค้า',pname,'ปริมาณ',currentval-quantity)
+  var pinfo = psheet.getrowdict('ชื่อสินค้า',pname)[0]
+  var trx = [Date(Date.now()).toString(),oid,custid,pinfo['รหัสสินค้า'],pinfo['ชื่อสินค้า'],pinfo['ราคา'],quantity]
+
+  var sheetname = 'ออเดอร์'
+  var osheet = gspandas.gsdataframe(sheeturl,sheetname)
+  osheet.sheet.appendRow(trx)
+}
+
+function getcustdata(custid='Uc217a79841540c1b0afe06312a885849'){
+  var sheeturl = 'https://docs.google.com/spreadsheets/d/14o2tyW7LLMwE3oVqVDqpI8sbtxSNNIOueHO5aXHcsF0/edit?usp=sharing'
+  var sheetname = 'ออเดอร์'
+  var psheet = gspandas.gsdataframe(sheeturl,sheetname)
+  var pinfo = psheet.getrowdict('รหัสลูกค้า',custid)
+  Logger.log(pinfo)
+  return pinfo
+}
+
+
+function getproductlistflex(custid='Uc217a79841540c1b0afe06312a885849'){
+  var datList = getcustdata(custid)
+ let wlist = []
+let totalPrice = 0 // initialize the total price to 0
+for (i in datList){
+  fitem = datList[i]['ชื่อสินค้า']
+  fprice = datList[i]['ราคา']
+  totalPrice += fprice // add the price to the total price
+  let oneitem = {
+    "type": "box",
+    "layout": "horizontal",
+    "contents": [
+      {
+        "type": "text",
+        "text": fitem,
+        "size": "sm",
+        "color": "#555555",
+        "flex": 0
+      },
+      {
+        "type": "text",
+        "text": fprice + " บาท",
+       
+        "size": "sm",
+        "color": "#111111",
+        "align": "end"
+      }
+    ]
+  }
+  wlist.push(oneitem)
+}
+// add total price to the end of the list
+let totalItem = {
+  "type": "box",
+  "layout": "horizontal",
+  "contents": [
+    {
+      "type": "text",
+      "text": "ราคารวม",
+      "size": "sm",
+      "color": "#555555",
+      "flex": 0
+    },
+    {
+      "type": "text",
+      "text": totalPrice + " บาท",
+      "size": "sm",
+      "color": "#111111",
+      "align": "end"
+    }
+  ]
+}
+wlist.push(totalItem)
+  //sep = 
+  //wlist.push()
+    
+
+  var itemflex = {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "xxl",
+        "spacing": "sm",
+        "contents": wlist
+      }
+  
+  Logger.log(itemflex)
+  return itemflex
+}
+
+
+
+
+
+function getproductflex(custid='Uc217a79841540c1b0afe06312a885849',altText='This is a Flex Message'){
+  itemflex = getproductlistflex(custid)
+
+
+  var flextemplate = {
+  "type": "bubble",
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "รายการที่เลือก",
+        "weight": "bold",
+        "color": "#1DB446",
+        "size": "sm"
+      },
+      {
+        "type": "separator",
+        "margin": "xxl"
+      },
+      itemflex
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "action": {
+          "type": "message",
+          "label": "ส่งออเดอร์",
+          "text": "ส่งออเดอร์"
+        },
+        "style": "primary"
+      }
+    ]
+  },
+  "styles": {
+    "footer": {
+      "separator": false
+    }
+  }
+}
+
+  var lineres = {}
+  lineres['type'] = 'flex'
+  lineres['altText'] = altText
+  lineres['contents'] = flextemplate
+
+  var lr = {
+  "line_payload":[
+      lineres
+    ],
+  "response_type": "object"
+  }
+  return lr
+}
+
+function doGet(request){
+ // Change Spread Sheet url
+ var custid = request.parameter.custid
+ //Logger.log(pname)
+ var result = getproductflex(custid)
+ //Logger.log(jo)
+ result = JSON.stringify(result);
+ return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON); 
+}
+
+

@@ -1,0 +1,223 @@
+function exploreclass(oid='1',custid='333',pname='ลาบเป็ด 1 จาน',quantity=1) {
+  var sheeturl = 'https://docs.google.com/spreadsheets/d/14o2tyW7LLMwE3oVqVDqpI8sbtxSNNIOueHO5aXHcsF0/edit?usp=sharing'
+  var sheetname = 'สินค้า'
+  var psheet = gspandas.gsdataframe(sheeturl,sheetname)
+  var currentval = parseInt(psheet.getvalue('ชื่อสินค้า',pname,'ปริมาณ'),10)
+  psheet.updatevalue('ชื่อสินค้า',pname,'ปริมาณ',currentval-quantity)
+  var pinfo = psheet.getrowdict('ชื่อสินค้า',pname)[0]
+  var trx = [Date(Date.now()).toString(),oid,custid,pinfo['รหัสสินค้า'],pinfo['ชื่อสินค้า'],pinfo['ราคา'],quantity]
+
+  var sheetname = 'ออเดอร์'
+  var osheet = gspandas.gsdataframe(sheeturl,sheetname)
+  osheet.sheet.appendRow(trx)
+}
+
+function getproductdata(category='อาหารคาว'){
+  var sheeturl = 'https://docs.google.com/spreadsheets/d/14o2tyW7LLMwE3oVqVDqpI8sbtxSNNIOueHO5aXHcsF0/edit?usp=sharing'
+  var sheetname = 'สินค้า'
+  var psheet = gspandas.gsdataframe(sheeturl,sheetname)
+  var pinfo = psheet.getrowdict('หมวด',category)
+  Logger.log(pinfo)
+  return pinfo
+}
+
+function genproductflex(category,ncol=3){
+  var pdata = getproductdata(category)
+  var pflex = getmultipleflex(pdata,ncol)
+  Logger.log(pflex)
+  return pflex
+
+
+
+}
+
+function getproductflex(pname,pimage,pprice,altText='This is a Flex Message'){
+
+  var flextemplate = {
+  "type": "carousel",
+  "contents": [
+    {
+      "type": "bubble",
+      "size": "giga",
+      "hero": {
+        "type": "image",
+        "size": "full",
+        "aspectRatio": "20:13",
+        "aspectMode": "cover",
+        "url": pimage
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "sm",
+        "contents": [
+          {
+            "type": "text",
+            "text": pname,
+            "wrap": true,
+            "weight": "bold",
+            "size": "xl"
+          },
+          {
+            "type": "box",
+            "layout": "baseline",
+            "contents": [
+              {
+                "type": "text",
+                "text": pprice + ' บาท',
+                "wrap": true,
+                "weight": "bold",
+                "size": "xl",
+                "flex": 0
+              }
+            ]
+          }
+        ]
+      },
+      "footer": {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "sm",
+        "contents": [
+          {
+            "type": "button",
+            "style": "primary",
+            "action": {
+              "type": "uri",
+              "label": "เพิ่มรายการ",
+              "uri": "https://linecorp.com"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+
+  var lineres = {}
+  lineres['type'] = 'flex'
+  lineres['altText'] = altText
+  lineres['contents'] = flextemplate
+
+  var lr = {
+  "line_payload":[
+      lineres
+    ],
+  "response_type": "object"
+  }
+  return lr
+}
+
+function doGet(request){
+ // Change Spread Sheet url
+ var category = request.parameter.category
+ var ncol = request.parameter.ncol
+ //Logger.log(pname)
+ var result = genproductflex(category,ncol)
+ //Logger.log(jo)
+ result = JSON.stringify(result);
+ return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON); 
+}
+
+function getmenuflex(mimage,mname,mprice){
+
+    var flextemplate = 
+    {
+      "type": "bubble",
+      "size": "nano",
+      "hero": {
+        "type": "image",
+        "url": mimage,
+        "size": "full",
+        "aspectMode": "cover",
+        "aspectRatio": "320:213",
+        "action": {
+          "type": "message",
+          "label": "action",
+          "text": mname
+        }
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": mname,
+            "weight": "regular",
+            "size": "xxs",
+            "wrap": true,
+            "margin": "none",
+            "contents": []
+          },
+          {
+            "type": "text",
+            "text": mprice + " บาท",
+            "size": "xxs"
+          }
+        ],
+        "spacing": "none",
+        "paddingAll": "sm"
+      }
+    }
+
+return flextemplate
+}
+
+function getrowmenu(mlist){
+  var mltemp = []
+  for (let m in mlist){
+    let mname = mlist[m]['menuname']
+    let mprice = mlist[m]['menuprice']
+    let mimage = mlist[m]['menuimage']
+    var mtemp = getmenuflex(mimage,mname,mprice)
+    mltemp.push(mtemp)
+    
+  }
+  return mltemp
+}
+
+
+function getmultipleflex(mlist,ncol=3) {
+  
+  //let ncol = 3
+  let nrow = Math.floor(mlist.length/ncol)
+
+  Logger.log(ncol)
+  Logger.log(nrow)
+  let lpayloadList = []
+  for (i = 0; i < nrow; i++){
+    let mltemp = []
+    for (j=0; j< ncol; j++){
+      let ind = i*ncol + j
+      let mname = mlist[ind]['ชื่อสินค้า']
+      let mprice = mlist[ind]['ราคา']
+      let mimage = mlist[ind]['รูปภาพ']
+      var mtemp = getmenuflex(mimage,mname,mprice)
+      mltemp.push(mtemp)
+    }
+    
+    var flextemplate = {
+    "type": "carousel",
+    "contents": mltemp
+    }
+
+    var lineres = {}
+    lineres['type'] = 'flex'
+    lineres['altText'] = 'This is Flex message'
+    lineres['contents'] = flextemplate
+    lpayloadList.push(lineres)
+
+
+  }
+
+  var lr = {
+  "line_payload": lpayloadList,
+  "response_type": "object"
+  }
+  Logger.log(lr)
+  return lr
+}
+
+
+

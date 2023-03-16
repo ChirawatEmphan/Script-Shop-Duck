@@ -1,0 +1,8 @@
+gspandas
+1IITpJn58pMjlJ8M-KqVinnbQAyEGcYy5m44vo1gHfh7_Hvs-TKDESE5C
+
+add product ?pname=<<keyword>>&custid=<<customer_id>>  พิมพ์รายการอาหาร
+delete ?custid=<<customer_id>>  ยกเลิกออเดอร์
+check ?custid=<<customer_id>>   ตรวจสอบออเดอร์
+sent ?custid=<<customer_id>>&linenotitoken=.........  ไลน์ noti พิมพ์ส่งออเดอร์
+
